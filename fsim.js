@@ -77,14 +77,14 @@
 
         Token object:
           kind contains one of the above as a string
-               (or '' if at the end of input, or 'ERROR')
+               (or 'END' if at the end of input, or 'ERROR')
           value contains the semantic value for VAR, CONSTR, and LITERAL
 
         tokenizer returns an object with the following methods:
           peek - returns the current token without consuming it
           eat  - returns and consumes the current token
-          get(k) - checks that the current token has the kind k
-                   and then behaves like eat
+          get  - checks that the current token has the kind given as parameter 
+                 and then behaves like eat
     */
     var tokenizer = function tokenizer(text) {
         var inx = 0;
@@ -100,9 +100,11 @@
                     return { kind: '->' };
                 }
                 /* fallthrough */
-            case '': case '\\': case '(': case ')':
-            case '+': case '*': case '/': case '=':
+            case '\\':
+            case '(': case ')': case '+': case '*': case '/': case '=':
                 return { kind: c };
+            case '':
+                return { kind: 'END' };
             default:
                 var subtext = text.substring(inx - 1);
                 var match = /^\d+/.exec(subtext);
@@ -270,7 +272,7 @@
                       l: l,
                       r: r };
                 break;
-            case '': case 'in': case ')':
+            case 'END': case 'in': case ')':
                 return l;
             default:
                 throw 'Parse error: ' +
@@ -299,7 +301,7 @@
                       l: l,
                       r: r };
                 break;
-            case '': case 'in': case ')': case '+': case '-':
+            case 'END': case 'in': case ')': case '+': case '-':
                 return l;
             default:
                 throw 'Parse error: ' +
@@ -338,7 +340,7 @@
                       l: l,
                       r: r };
                 break;
-            case '': case 'in': case ')':
+            case 'END': case 'in': case ')':
             case '+': case '-': case '*': case '/':
                 return l;
             default:
@@ -427,11 +429,13 @@
             prettySpace(cont1);
             prettyVariable(cont1, term.x);
             prettySpace(cont1);
+            prettyOperator(cont1, '=');
+            prettySpace(cont1);
             prettyTerm(cont1, term.t);
             prettySpace(cont1);
             prettyKeyword(cont1, 'in');
             prettySpace(cont1);
-            prettyTerm(cont1, term.t);
+            prettyTerm(cont1, term.u);
             break;
         case 'lambda':
             cont1 = prettyTermContainer(container, term);
@@ -499,7 +503,7 @@
         switch (term.op) {
         case 'app':
             cont1 = prettyTermContainer(container, term);
-            prettyTerm4(cont1, term.r);
+            prettyTerm4(cont1, term.l);
             prettySpace(cont1);
             prettyTerm5(cont1, term.r);
             break;
