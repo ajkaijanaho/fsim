@@ -94,8 +94,13 @@
                 match = /^[a-z_]\w*/.exec(subtext);
                 if (match !== null) {
                     inx += match[0].length-1;
-                    return { kind: 'VAR',
-                             value: match[0] };
+                    switch (match[0]) {
+                    case 'let': case 'in':
+                        return { kind: match[0] };
+                    default:
+                        return { kind: 'VAR',
+                                 value: match[0] };
+                    }
                 }
                 return { kind: 'ERROR' };
             }
