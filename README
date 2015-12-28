@@ -1,4 +1,11 @@
-<!--
+This is a work in progress, a learning-by-doing project for me to figure out
+modern Javascript and (frontend-only) single-page apps.
+
+The plan is to allow the user to somehow explore the evaluation of simple
+programs in a simple functional language.  It's not nearly complete yet.
+
+The program is licensed as
+
   Copyright 2015 Antti-Juhani Kaijanaho
 
   Permission is hereby granted, free of charge, to any person
@@ -20,35 +27,3 @@
   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
--->
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" /> 
-    <title>A simple functional language simulator</title>
-  </head>
-  <body>
-    <header>
-      <h1>A simple functional language simulator</h1>
-    </header>
-    <section>
-      <h2>Input</h2>
-      <input type="text" id="inputbox" disabled />
-      <section>
-        <h3>Live parse tree</h3>
-        <ul id="ptree"></ul>
-        <p id="ptreeErr"></p>
-      </section>
-    </section>
-    <section>
-      <h2>Foo</h2>
-      <p id="pretty"></p>
-    </section>
-    <footer>
-      <hr />
-      <address>
-        Antti-Juhani Kaijanaho &lt;antti-juhani@kaijanaho.fi&gt;
-      </address>
-    </footer>
-  <script src="fsim.js"></script>
-</body>
