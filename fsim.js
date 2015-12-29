@@ -32,6 +32,7 @@
     var history = document.getElementById('history');
     var ptree = document.getElementById('ptree');
     var pretty = document.getElementById('pretty');
+    var pretty2 = document.getElementById('pretty2');
     var ptreeErr = document.getElementById('ptreeErr');
     var inputbox = document.getElementById('inputbox');
 
@@ -44,9 +45,11 @@
         while (pretty.firstChild) pretty.removeChild(pretty.firstChild);
 
         var ter = tokenizer(inputbox.value);
-        var pt = parseTerm(ter);
+        var pt = parseTerm(ter, {});
         prettyTerm(pretty,pt);
- };
+        var pt2 = cloneParseTree(pt);
+        prettyTerm(pretty2,pt2);
+    };
 
     var handleInput = function() {
         while (ptree.firstChild) ptree.removeChild(ptree.firstChild);
@@ -56,13 +59,23 @@
 
         try {
             var ter = tokenizer(inputbox.value);
-            var pt = parseTerm(ter);
+            var pt = parseTerm(ter,{});
             showParseTree(pt, ptree);
         } catch (err) {
             ptreeErr.textContent = err;
         }
     };
 
+    var setupBetaRedex = function(domElement, termAST) {
+        domElement.addEventListener('mouseover', function(ev) {
+            ev.stopPropagation();
+            domElement.setAttribute('class', 'beta-redex');
+        });
+        domElement.addEventListener('mouseout', function(ev) {
+            ev.stopPropagation();
+            domElement.removeAttribute('class');
+        });
+    }
 
     inputbox.addEventListener('keypress', handleEnter);
     inputbox.addEventListener('input', handleInput);
@@ -217,35 +230,49 @@
 
      Parse functions return parse tree objects.
 
+     The bindings parameter is an object containing the current
+     bindings: each variable is bound to its binding node up
+     in the parse tree.  Also, there is the property '?bindingCount'
+     which is increased each time a binding is parsed.
+
     */
 
-    var parseTerm = function parseTerm(ter) {
+    var parseTerm = function parseTerm(ter, bindings) {
+        if (!bindings['?bindingCount']) bindings['?bindingCount'] = 0;
         switch (ter.peek().kind) {
         case 'let':
             return (function() {
                 ter.eat();
                 var x = ter.get('VAR').value;
+                var rv = { op: 'let', x: x };
+                var old = bindings[x];
+                rv.unique = bindings['?bindingCount']++;
+                bindings[x] = rv;
                 ter.get('=');
-                var t = parseTerm(ter);
+                var t = parseTerm(ter, bindings);
                 ter.get('in');
-                var u = parseTerm(ter);
-                return { op: 'let',
-                         x: x,
-                         t: t,
-                         u: u };
+                var u = parseTerm(ter, bindings);
+                rv.t = t;
+                rv.u = u;
+                bindings[x] = old;
+                return rv;
             })();
         case '\\':
             return (function() {
                 ter.eat();
                 var x = ter.get('VAR').value;
+                var rv = { op: 'lambda', x: x };
+                rv.unique = bindings['?bindingCount']++;                
+                var old = bindings[x];
+                bindings[x] = rv;
                 ter.get('->');
-                var t = parseTerm(ter);
-                return { op: 'lambda',
-                         x: x,
-                         t: t };
+                var t = parseTerm(ter, bindings);
+                rv.t = t;
+                bindings[x] = old;                
+                return rv;
             })();
         case 'VAR': case 'CONSTR': case 'LITERAL': case '(': case '-':
-            return parseTerm1(ter);
+            return parseTerm1(ter, bindings);
         default:
             throw 'Parse error: ' +
                 'expected a variable, a constructor, "(", or "-"' +
@@ -253,21 +280,21 @@
         }
     };
 
-    var parseTerm1 = function parseTerm1(ter) {
-        var l = parseTerm2(ter);
+    var parseTerm1 = function parseTerm1(ter, bindings) {
+        var l = parseTerm2(ter, bindings);
         var r;
         while (true) {
             switch (ter.peek().kind) {
             case '+':
                 ter.eat();
-                r = parseTerm2(ter);
+                r = parseTerm2(ter, bindings);
                 l = { op: '+',
                       l: l,
                       r: r };
                 break;
             case '-':
                 ter.eat();
-                r = parseTerm2(ter);
+                r = parseTerm2(ter, bindings);
                 l = { op: '-',
                       l: l,
                       r: r };
@@ -282,21 +309,21 @@
         }
     };
 
-    var parseTerm2 = function parseTerm2(ter) {
-        var l = parseTerm3(ter);
+    var parseTerm2 = function parseTerm2(ter, bindings) {
+        var l = parseTerm3(ter, bindings);
         var r;
         while (true) {
             switch (ter.peek().kind) {
             case '*':
                 ter.eat();
-                r = parseTerm2(ter);
+                r = parseTerm2(ter, bindings);
                 l = { op: '*',
                       l: l,
                       r: r };
                 break;
             case '/':
                 ter.eat();
-                r = parseTerm2(ter);
+                r = parseTerm2(ter, bindings);
                 l = { op: '*',
                       l: l,
                       r: r };
@@ -313,15 +340,15 @@
     };
 
 
-    var parseTerm3 = function parseTerm3(ter) {
+    var parseTerm3 = function parseTerm3(ter, bindings) {
         var r;
         switch (ter.peek().kind) {
         case '-':
             ter.eat();
-            r = parseTerm3(ter);
+            r = parseTerm3(ter, bindings);
             return { op: 'neg', r: r };
         case 'VAR': case 'CONSTR': case 'LITERAL': case '(':
-            return parseTerm4(ter);
+            return parseTerm4(ter, bindings);
         default:
                 throw 'Parse error: ' +
                     'expected a variable, a constructor, "-" or "("' +
@@ -329,13 +356,13 @@
         }
     };
 
-    var parseTerm4 = function parseTerm4(ter) {
-        var l = parseTerm5(ter);
+    var parseTerm4 = function parseTerm4(ter, bindings) {
+        var l = parseTerm5(ter, bindings);
         var r;
         while (true) {
             switch (ter.peek().kind) {
             case 'VAR': case 'CONSTR': case 'LITERAL': case '(':
-                r = parseTerm5(ter);
+                r = parseTerm5(ter, bindings);
                 l = { op: 'app',
                       l: l,
                       r: r };
@@ -352,12 +379,17 @@
         }
     };
 
-    var parseTerm5 = function parseTerm5(ter) {
+    var parseTerm5 = function parseTerm5(ter, bindings) {
         var inner;
         switch (ter.peek().kind) {
         case 'VAR':
             inner = ter.eat().value;
-            return { op: 'var', name: inner };
+            if (!bindings.hasOwnProperty(inner) || !bindings[inner]) {
+                throw "Use of a free variable " + inner +
+                    ".  Free variables are not allowed; " +
+                    "use constructors instead.";
+            }
+            return { op: 'var', name: inner, boundBy: bindings[inner] };
         case 'CONSTR':
             inner = ter.eat().value;
             return { op: 'constr', name: inner };
@@ -366,7 +398,7 @@
             return { op: 'literal', value: inner };
         case '(':
             ter.eat();
-            inner = parseTerm(ter);
+            inner = parseTerm(ter, bindings);
             ter.get(')');
             return inner;
         default:
@@ -377,41 +409,64 @@
     };
 
     /**********************************************************************
+     * PARSE TREE UTILITIES
+     **********************************************************************/
+
+    var cloneParseTree = function (pt) {
+        if (!pt.op) return pt;
+        var rv = {};
+        for (var v in pt) {
+            if (!pt.hasOwnProperty(v)) continue;
+            rv[v] = cloneParseTree(pt[v]);
+        }
+        return rv;
+    };
+
+    /**********************************************************************
      * PRETTYPRINTERS
      **********************************************************************/
 
     // just show the parse tree
     var showParseTree = function showParseTree(root, elem) {
         var sub1 = document.createElement('li');
-        sub1.textContent = root.op;
         elem.appendChild(sub1);
-        var sub2 = document.createElement('ul');
+        var sub2 = document.createElement('span');
+        sub1.appendChild(sub2);        
+        sub2.textContent = root.op;
+        var sub3 = document.createElement('ul');
         switch (root.op) {
         case 'let':
-            sub1.textContent += ' [' + root.x + ']';
-            sub1.appendChild(sub2);
-            showParseTree(root.t, sub2);
-            showParseTree(root.u, sub2);
+            sub2.textContent += ' [' + root.x + '/' + root.unique + ']';
+            sub2.setAttribute('class', 'binding' + root.unique);
+            sub1.appendChild(sub3);
+            showParseTree(root.t, sub3);
+            showParseTree(root.u, sub3);
             break;
         case 'lambda':
-            sub1.textContent += ' [' + root.x + ']';
-            sub1.appendChild(sub2);
-            showParseTree(root.t, sub2);
+            sub2.textContent += ' [' + root.x + '/' + root.unique + ']';
+            sub2.setAttribute('class', 'binding' + root.unique);
+            sub1.appendChild(sub3);
+            showParseTree(root.t, sub3);
             break;
         case '+': case '-': case '*': case '/': case 'app':
-            sub1.appendChild(sub2);
-            showParseTree(root.l, sub2);
-            showParseTree(root.r, sub2);
+            sub1.appendChild(sub3);
+            showParseTree(root.l, sub3);
+            showParseTree(root.r, sub3);
             break;
         case 'neg':
-            sub1.appendChild(sub2);
-            showParseTree(root.r, sub2);
+            sub1.appendChild(sub3);
+            showParseTree(root.r, sub3);
             break;
-        case 'var': case 'constr':
-            sub1.textContent += ' [' + root.name + ']';
+        case 'var':
+            sub2.textContent +=
+                ' [' + root.name + '/' + root.boundBy.unique + ']';
+            sub2.setAttribute('class', 'binding' + root.boundBy.unique);
+            break;
+        case 'constr':
+            sub2.textContent += ' [' + root.name + ']';
             break;
         case 'literal':
-            sub1.textContent += ' [' + root.value + ']';
+            sub2.textContent += ' [' + root.value + ']';
             break;
         default:
             throw 'Show error!';
@@ -427,7 +482,7 @@
             cont1 = prettyTermContainer(container, term);
             prettyKeyword(cont1, 'let');
             prettySpace(cont1);
-            prettyVariable(cont1, term.x);
+            prettyVariable(cont1, term.x, term.unique);
             prettySpace(cont1);
             prettyOperator(cont1, '=');
             prettySpace(cont1);
@@ -441,7 +496,7 @@
             cont1 = prettyTermContainer(container, term);
             prettyOperator(cont1, '\\');
             prettySpace(cont1);
-            prettyVariable(cont1, term.x);
+            prettyVariable(cont1, term.x, term.unique);
             prettySpace(cont1);
             prettyOperator(cont1, '->');
             prettySpace(cont1);
@@ -489,8 +544,7 @@
         switch (term.op) {
         case 'neg':
             cont1 = prettyTermContainer(container, term);
-            prettyOperator(cont1, term.op);
-            prettySpace(cont1);
+            prettyOperator(cont1, '-');
             prettyTerm3(cont1, term.r);
             break;
         default:
@@ -503,6 +557,9 @@
         switch (term.op) {
         case 'app':
             cont1 = prettyTermContainer(container, term);
+            if (term.l.op === 'lambda') {
+                setupBetaRedex(cont1, term);
+            }
             prettyTerm4(cont1, term.l);
             prettySpace(cont1);
             prettyTerm5(cont1, term.r);
@@ -517,7 +574,7 @@
         switch (term.op) {
         case 'var':
             cont1 = prettyTermContainer(container, term);
-            prettyVariable(cont1, term.name);
+            prettyVariable(cont1, term.name, term.boundBy.unique);
             break;
         case 'constr':
             cont1 = prettyTermContainer(container, term);
@@ -553,9 +610,10 @@
         container.appendChild(n);
     };
 
-    var prettyVariable = function(container, name) {
+    var prettyVariable = function(container, name, unique) {
         var span = document.createElement('span');
         span.setAttribute('class', 'prettyVariable');
+        span.setAttribute('class', 'binding' + unique);
         span.textContent = name;
         container.appendChild(span);
     };

@@ -24,7 +24,8 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" /> 
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="fsim.css" />
     <title>A simple functional language simulator</title>
   </head>
   <body>
@@ -35,7 +36,7 @@
       <h2>Input</h2>
       <input type="text" id="inputbox" disabled />
       <section>
-        <h3>Live parse tree</h3>
+        <h3>Live abstract syntax tree</h3>
         <ul id="ptree"></ul>
         <p id="ptreeErr"></p>
       </section>
@@ -43,6 +44,7 @@
     <section>
       <h2>Foo</h2>
       <p id="pretty"></p>
+      <p id="pretty2"></p>
     </section>
     <footer>
       <hr />
