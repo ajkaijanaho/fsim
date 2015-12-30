@@ -36,6 +36,19 @@
     var ptreeErr = document.getElementById('ptreeErr');
     var inputbox = document.getElementById('inputbox');
 
+    var prettyHooks = {}
+    
+    prettyHooks.setupBetaRedex = function(domElement, termAST) {
+        domElement.addEventListener('mouseover', function(ev) {
+            ev.stopPropagation();
+            domElement.setAttribute('class', 'beta-redex');
+        });
+        domElement.addEventListener('mouseout', function(ev) {
+            ev.stopPropagation();
+            domElement.removeAttribute('class');
+        });
+    };
+
     var handleEnter = function(ev) {
         if (!ev) ev = window.event;
         var key = ev.keyCode || ev.which;
@@ -46,9 +59,9 @@
 
         var ter = tokenizer(inputbox.value);
         var pt = parseTerm(ter, {});
-        prettyTerm(pretty,pt);
-        var pt2 = cloneParseTree(pt);
-        prettyTerm(pretty2,pt2);
+        prettyTerm(pretty,prettyHooks,pt);
+        var pt2 = cloneParseTree(pt, {});
+        prettyTerm(pretty2,{},pt2);
     };
 
     var handleInput = function() {
@@ -65,17 +78,6 @@
             ptreeErr.textContent = err;
         }
     };
-
-    var setupBetaRedex = function(domElement, termAST) {
-        domElement.addEventListener('mouseover', function(ev) {
-            ev.stopPropagation();
-            domElement.setAttribute('class', 'beta-redex');
-        });
-        domElement.addEventListener('mouseout', function(ev) {
-            ev.stopPropagation();
-            domElement.removeAttribute('class');
-        });
-    }
 
     inputbox.addEventListener('keypress', handleEnter);
     inputbox.addEventListener('input', handleInput);
@@ -479,7 +481,7 @@
 
     // prettyprint into DOM
     // (grammar as above, with the //-variants instead of the _-variants)
-    var prettyTerm = function prettyTerm(container, term) {
+    var prettyTerm = function prettyTerm(container, hooks, term) {
         var cont1;
         switch (term.op) {
         case 'let':
@@ -490,11 +492,11 @@
             prettySpace(cont1);
             prettyOperator(cont1, '=');
             prettySpace(cont1);
-            prettyTerm(cont1, term.t);
+            prettyTerm(cont1, hooks, term.t);
             prettySpace(cont1);
             prettyKeyword(cont1, 'in');
             prettySpace(cont1);
-            prettyTerm(cont1, term.u);
+            prettyTerm(cont1, hooks, term.u);
             break;
         case 'lambda':
             cont1 = prettyTermContainer(container, term);
@@ -504,76 +506,76 @@
             prettySpace(cont1);
             prettyOperator(cont1, '->');
             prettySpace(cont1);
-            prettyTerm(cont1, term.t);
+            prettyTerm(cont1, hooks, term.t);
             break;
         default:
-            prettyTerm1(container, term);
+            prettyTerm1(container, hooks, term);
         }
     };
 
-    var prettyTerm1 = function prettyTerm1(container, term) {
+    var prettyTerm1 = function prettyTerm1(container, hooks, term) {
         var cont1;
         switch (term.op) {
         case '+': case '-':
             cont1 = prettyTermContainer(container, term);
-            prettyTerm1(cont1, term.l);
+            prettyTerm1(cont1, hooks, term.l);
             prettySpace(cont1);
             prettyOperator(cont1, term.op);
             prettySpace(cont1);
-            prettyTerm2(cont1, term.r);
+            prettyTerm2(cont1, hooks, term.r);
             break;
         default:
-            prettyTerm2(container, term);
+            prettyTerm2(container, hooks, term);
         }
     };
 
-    var prettyTerm2 = function prettyTerm2(container, term) {
+    var prettyTerm2 = function prettyTerm2(container, hooks, term) {
         var cont1;
         switch (term.op) {
         case '*': case '/':
             cont1 = prettyTermContainer(container, term);
-            prettyTerm2(cont1, term.l);
+            prettyTerm2(cont1, hooks, term.l);
             prettySpace(cont1);
             prettyOperator(cont1, term.op);
             prettySpace(cont1);
-            prettyTerm3(cont1, term.r);
+            prettyTerm3(cont1, hooks, term.r);
             break;
         default:
-            prettyTerm3(container, term);
+            prettyTerm3(container, hooks, term);
         }
     };
 
-    var prettyTerm3 = function prettyTerm3(container, term) {
+    var prettyTerm3 = function prettyTerm3(container, hooks, term) {
         var cont1;
         switch (term.op) {
         case 'neg':
             cont1 = prettyTermContainer(container, term);
             prettyOperator(cont1, '-');
-            prettyTerm3(cont1, term.r);
+            prettyTerm3(cont1, hooks, term.r);
             break;
         default:
-            prettyTerm4(container, term);
+            prettyTerm4(container, hooks, term);
         }
     };
 
-    var prettyTerm4 = function prettyTerm4(container, term) {
+    var prettyTerm4 = function prettyTerm4(container, hooks, term) {
         var cont1;
         switch (term.op) {
         case 'app':
             cont1 = prettyTermContainer(container, term);
-            if (term.l.op === 'lambda') {
-                setupBetaRedex(cont1, term);
+            if (hooks.setupBetaRedex && term.l.op === 'lambda') {
+                hooks.setupBetaRedex(cont1, term);
             }
-            prettyTerm4(cont1, term.l);
+            prettyTerm4(cont1, hooks, term.l);
             prettySpace(cont1);
-            prettyTerm5(cont1, term.r);
+            prettyTerm5(cont1, hooks, term.r);
             break;
         default:
-            prettyTerm5(container, term);
+            prettyTerm5(container, hooks, term);
         }
     };
 
-    var prettyTerm5 = function prettyTerm5(container, term) {
+    var prettyTerm5 = function prettyTerm5(container, hooks, term) {
         var cont1;
         switch (term.op) {
         case 'var':
@@ -591,7 +593,7 @@
         default:
             cont1 = prettyTermContainer(container, term);
             prettyParen(cont1, '(');
-            prettyTerm(cont1, term);
+            prettyTerm(cont1, hooks, term);
             prettyParen(cont1, ')');
         }
     };
