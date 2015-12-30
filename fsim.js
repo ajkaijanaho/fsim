@@ -31,10 +31,23 @@
 
     var history = document.getElementById('history');
     var ptree = document.getElementById('ptree');
-    var pretty = document.getElementById('pretty');
-    var pretty2 = document.getElementById('pretty2');
+    var trace = document.getElementById('trace');
+    var currentTerm = document.getElementById('current-term');
     var ptreeErr = document.getElementById('ptreeErr');
     var inputbox = document.getElementById('inputbox');
+
+    var currentTermAST = null;
+
+    var addToTrace = function() {
+        var newTerm = cloneParseTree(currentTermAST, {});
+        var pretty = document.createElement('span');
+        prettyTerm(pretty,{},newTerm);
+        var n = document.createTextNode(' \u21D2');
+        pretty.appendChild(n);
+        n = document.createElement('br');
+        pretty.appendChild(n);
+        trace.insertBefore(pretty, currentTerm);
+    };
 
     var prettyHooks = {}
     
@@ -47,6 +60,14 @@
             ev.stopPropagation();
             domElement.removeAttribute('class');
         });
+        domElement.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            betaReduce(termAST);
+            while (currentTerm.firstChild) {
+                currentTerm.removeChild(currentTerm.firstChild);
+            }
+            prettyTerm(currentTerm,prettyHooks,currentTermAST);
+        });
     };
 
     var handleEnter = function(ev) {
@@ -55,13 +76,16 @@
         if (key != '13') return true;
         if (!inputbox.value) return true;
 
-        while (pretty.firstChild) pretty.removeChild(pretty.firstChild);
-
+        while (trace.firstChild && trace.firstChild !== currentTerm) {
+            trace.removeChild(trace.firstChild);
+        }
+        while (currentTerm.firstChild) {
+            currentTerm.removeChild(currentTerm.firstChild);
+        }
+        
         var ter = tokenizer(inputbox.value);
-        var pt = parseTerm(ter, {});
-        prettyTerm(pretty,prettyHooks,pt);
-        var pt2 = cloneParseTree(pt, {});
-        prettyTerm(pretty2,{},pt2);
+        currentTermAST = parseTerm(ter, {});
+        prettyTerm(currentTerm,prettyHooks,currentTermAST);
     };
 
     var handleInput = function() {
@@ -79,6 +103,7 @@
         }
     };
 
+    currentTerm.addEventListener('click', addToTrace, true);
     inputbox.addEventListener('keypress', handleEnter);
     inputbox.addEventListener('input', handleInput);
     inputbox.disabled = false;
@@ -230,12 +255,18 @@
                  FIRST:  VAR CONSTR "("
                  FOLLOW: END "in" ")" "+" "-" "*" "/" VAR CONSTR "("
 
-     Parse functions return parse tree objects.
+     Parse functions return abstract parse trees.  Each node object
+     has at least the property 'op' which describes the operation.
 
      The bindings parameter is an object containing the current
      bindings: each variable is bound to its binding node up
      in the parse tree.  Also, there is the property '?bindingCount'
      which is increased each time a binding is parsed.
+
+     Parse tree nodes that bind variables have the additional property
+     "unique" which contains an integer uniquely identifying that
+     binding node in a parse tree.  It is used in tree visualization
+     and in cloneParseTree.
 
     */
 
@@ -428,6 +459,17 @@
         return rv;
     };
 
+    var replaceParseTree = function(o,n) {
+        for (var v in o) {
+            if (!o.hasOwnProperty(v)) continue;
+            delete o[v];
+        }
+        for (var v in n) {
+            if (!n.hasOwnProperty(v)) continue;
+            o[v] = n[v];
+        }
+    };
+    
     /**********************************************************************
      * PRETTYPRINTERS
      **********************************************************************/
@@ -652,4 +694,42 @@
         container.appendChild(span);
     };
 
+    /**********************************************************************
+     * BETA REDUCTION AND COMPANY
+     **********************************************************************/
+
+    var betaReduce = function(term) {
+        if (term.op !== 'app' || term.l.op != 'lambda') {
+            alert('Not a beta redex.');
+            return;
+        }
+        subst(term.l.t, term.l.x, term.l.unique, term.r);
+        replaceParseTree(term, term.l.t);
+    };
+
+    var subst = function(t,x,xuniq,u) {
+        switch (t.op) {
+        case 'var':
+            if (t.name === x && t.boundBy.unique === xuniq) {
+                replaceParseTree(t,u);
+            }
+            return;
+        case 'let':
+            subst(t.t, x, xuniq, u);
+            subst(t.u, x, xuniq, u);
+            return;
+        case 'lambda':
+            subst(t.t, x, xuniq, u);
+            return;
+        case '+': case '-': case '*': case '/': case 'app':
+            subst(t.l, x, xuniq, u);
+            subst(t.r, x, xuniq, u);
+            return;
+        case 'neg':
+            subst(t.r, x, xuniq, u);
+            return;
+        default:
+            return;
+        }
+    };    
 })();
