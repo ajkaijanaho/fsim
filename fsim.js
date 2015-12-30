@@ -412,12 +412,16 @@
      * PARSE TREE UTILITIES
      **********************************************************************/
 
-    var cloneParseTree = function (pt) {
+    var cloneParseTree = function (pt, seen) {
         if (!pt.op) return pt;
+        if (pt.hasOwnProperty("unique") && seen[pt.unique]) {
+            return seen[pt.unique];
+        }
         var rv = {};
+        if (pt.hasOwnProperty("unique")) seen[pt.unique] = rv;
         for (var v in pt) {
             if (!pt.hasOwnProperty(v)) continue;
-            rv[v] = cloneParseTree(pt[v]);
+            rv[v] = cloneParseTree(pt[v], seen);
         }
         return rv;
     };
