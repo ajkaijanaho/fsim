@@ -4,4 +4,15 @@
 
 .beta-redex { border-style: solid;
               border-width: thin;
-             }
+            }
+
+#input-section {  border-style: solid;
+                  width: 55%; }
+
+#trace-section { border-style: solid;
+                 left: 60%;
+                 min-height: 40ex;
+                 width: 39%;
+                 top: 3em;
+                 position: fixed;
+               }
