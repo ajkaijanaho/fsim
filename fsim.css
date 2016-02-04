@@ -2,9 +2,9 @@
 .binding1 { background-color: greenyellow; }
 .binding2 { background-color: darkorange; }
 
-.beta-redex { border-style: solid;
-              border-width: thin;
-            }
+.beta-redex, .arith-redex { border-style: solid;
+                            border-width: thin;
+                          }
 
 #input-section {  border-style: solid;
                   width: 55%; }

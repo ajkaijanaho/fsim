@@ -49,6 +49,7 @@
         trace.insertBefore(pretty, currentTerm);
     };
 
+    var prettyHooks = {};
 
     var setupRedex = function(name,reducer) {
         return function(domElement, termAST) {
@@ -70,8 +71,6 @@
             });
         }
     };
-
-    var prettyHooks = {}
 
     var handleEnter = function(ev) {
         if (!ev) ev = window.event;
@@ -360,7 +359,7 @@
             case '/':
                 ter.eat();
                 r = parseTerm2(ter, bindings);
-                l = { op: '*',
+                l = { op: '/',
                       l: l,
                       r: r };
                 break;
@@ -563,6 +562,11 @@
         switch (term.op) {
         case '+': case '-':
             cont1 = prettyTermContainer(container, term);
+            if (hooks.setupArithRedex &&
+                term.l.op === 'LITERAL' &&
+                term.l.op === 'LITERAL') {
+                hooks.setupArithRedex(cont1, term);
+            }
             prettyTerm1(cont1, hooks, term.l);
             prettySpace(cont1);
             prettyOperator(cont1, term.op);
@@ -579,6 +583,11 @@
         switch (term.op) {
         case '*': case '/':
             cont1 = prettyTermContainer(container, term);
+            if (hooks.setupArithRedex &&
+                term.l.op === 'LITERAL' &&
+                term.r.op === 'LITERAL') {
+                hooks.setupArithRedex(cont1, term);
+            }
             prettyTerm2(cont1, hooks, term.l);
             prettySpace(cont1);
             prettyOperator(cont1, term.op);
@@ -595,6 +604,10 @@
         switch (term.op) {
         case 'neg':
             cont1 = prettyTermContainer(container, term);
+            if (hooks.setupArithRedex &&
+                term.r.op === 'LITERAL') {
+                hooks.setupArithRedex(cont1, term);
+            }
             prettyOperator(cont1, '-');
             prettyTerm3(cont1, hooks, term.r);
             break;
@@ -697,6 +710,36 @@
         container.appendChild(span);
     };
 
+    /**********************************************************************
+     * ARITHMETIC
+     **********************************************************************/
+
+    var arithReduce = function(term) {
+        if ((term.op != 'neg' && term.l.op != 'LITERAL') ||
+            term.r.op != 'LITERAL') {
+            alert('Not an arithmetic redex.');
+            return;
+        }
+        var a = term.op === 'neg' ? term.l.value : undefined;
+        var b = term.r.value;
+        var res = 0;
+        switch (term.op) {
+        case '+': res = a + b; break;
+        case '-': res = a - b; break;
+        case '*': res = a * b; break;
+        case '/': res = a / b; break;
+        case 'neg': res = -b;  break;
+        default:
+            alert('Not an arithmetic redex.');
+            return;
+        }
+        replaceParseTree(term, { kind: 'LITERAL',
+                                 value: res });
+    };
+
+    prettyHooks.setupArithRedex = setupRedex('arith-redex',
+                                             arithReduce);
+    
     /**********************************************************************
      * BETA REDUCTION AND COMPANY
      **********************************************************************/
