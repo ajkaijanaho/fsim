@@ -1,5 +1,5 @@
 /*
-  Copyright 2015 Antti-Juhani Kaijanaho
+  Copyright 2015, 2016 Antti-Juhani Kaijanaho
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -49,26 +49,29 @@
         trace.insertBefore(pretty, currentTerm);
     };
 
-    var prettyHooks = {}
-    
-    prettyHooks.setupBetaRedex = function(domElement, termAST) {
-        domElement.addEventListener('mouseover', function(ev) {
-            ev.stopPropagation();
-            domElement.setAttribute('class', 'beta-redex');
-        });
-        domElement.addEventListener('mouseout', function(ev) {
-            ev.stopPropagation();
-            domElement.removeAttribute('class');
-        });
-        domElement.addEventListener('click', function(ev) {
-            ev.stopPropagation();
-            betaReduce(termAST);
-            while (currentTerm.firstChild) {
-                currentTerm.removeChild(currentTerm.firstChild);
-            }
-            prettyTerm(currentTerm,prettyHooks,currentTermAST);
-        });
+
+    var setupRedex = function(name,reducer) {
+        return function(domElement, termAST) {
+            domElement.addEventListener('mouseover', function(ev) {
+                ev.stopPropagation();
+                domElement.setAttribute('class', name);
+            });
+            domElement.addEventListener('mouseout', function(ev) {
+                ev.stopPropagation();
+                domElement.removeAttribute('class');
+            });
+            domElement.addEventListener('click', function(ev) {
+                ev.stopPropagation();
+                reducer(termAST);
+                while (currentTerm.firstChild) {
+                    currentTerm.removeChild(currentTerm.firstChild);
+                }
+                prettyTerm(currentTerm,prettyHooks,currentTermAST);
+            });
+        }
     };
+
+    var prettyHooks = {}
 
     var handleEnter = function(ev) {
         if (!ev) ev = window.event;
@@ -707,6 +710,9 @@
         replaceParseTree(term, term.l.t);
     };
 
+    prettyHooks.setupBetaRedex = setupRedex('beta-redex',
+                                            betaReduce);
+    
     var subst = function(t,x,xuniq,u) {
         switch (t.op) {
         case 'var':
