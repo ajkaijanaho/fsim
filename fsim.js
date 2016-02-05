@@ -760,6 +760,7 @@
     };    
 
     var subst = function(t,x,u) {
+        var nx;
         switch (t.op) {
         case 'var':
             if (t.name === x) {
@@ -772,8 +773,11 @@
             return;
         case 'lambda':
             if (t.x === x) return;
-            if (isFree(t.x, u)) {
-                alert('Variable capture of ' + t.x);
+            nx = t.x;
+            while (isFree(nx, u)) nx += "'";
+            if (t.x !== nx) {
+                subst(t.t, t.x, { op: 'var', name: nx });
+                t.x = nx;
             }
             subst(t.t, x, u);
             return;
@@ -789,3 +793,4 @@
         }
     };    
 })();
+
