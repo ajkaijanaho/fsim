@@ -563,8 +563,8 @@
         case '+': case '-':
             cont1 = prettyTermContainer(container, term);
             if (hooks.setupArithRedex &&
-                term.l.op === 'LITERAL' &&
-                term.l.op === 'LITERAL') {
+                term.l.op === 'literal' &&
+                term.r.op === 'literal') {
                 hooks.setupArithRedex(cont1, term);
             }
             prettyTerm1(cont1, hooks, term.l);
@@ -584,8 +584,8 @@
         case '*': case '/':
             cont1 = prettyTermContainer(container, term);
             if (hooks.setupArithRedex &&
-                term.l.op === 'LITERAL' &&
-                term.r.op === 'LITERAL') {
+                term.l.op === 'literal' &&
+                term.r.op === 'literal') {
                 hooks.setupArithRedex(cont1, term);
             }
             prettyTerm2(cont1, hooks, term.l);
@@ -605,7 +605,7 @@
         case 'neg':
             cont1 = prettyTermContainer(container, term);
             if (hooks.setupArithRedex &&
-                term.r.op === 'LITERAL') {
+                term.r.op === 'literal') {
                 hooks.setupArithRedex(cont1, term);
             }
             prettyOperator(cont1, '-');
@@ -715,12 +715,12 @@
      **********************************************************************/
 
     var arithReduce = function(term) {
-        if ((term.op != 'neg' && term.l.op != 'LITERAL') ||
-            term.r.op != 'LITERAL') {
+        if ((term.op != 'neg' && term.l.op != 'literal') ||
+            term.r.op != 'literal') {
             alert('Not an arithmetic redex.');
             return;
         }
-        var a = term.op === 'neg' ? term.l.value : undefined;
+        var a = term.op === 'neg' ? undefined : term.l.value;
         var b = term.r.value;
         var res = 0;
         switch (term.op) {
@@ -733,7 +733,7 @@
             alert('Not an arithmetic redex.');
             return;
         }
-        replaceParseTree(term, { kind: 'LITERAL',
+        replaceParseTree(term, { op: 'literal',
                                  value: res });
     };
 
