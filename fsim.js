@@ -262,18 +262,11 @@
 
      The bindings parameter is an object containing the current
      bindings: each variable is bound to its binding node up
-     in the parse tree.  Also, there is the property '?bindingCount'
-     which is increased each time a binding is parsed.
-
-     Parse tree nodes that bind variables have the additional property
-     "unique" which contains an integer uniquely identifying that
-     binding node in a parse tree.  It is used in tree visualization
-     and in cloneParseTree.
+     in the parse tree.
 
     */
 
     var parseTerm = function parseTerm(ter, bindings) {
-        if (!bindings['?bindingCount']) bindings['?bindingCount'] = 0;
         switch (ter.peek().kind) {
         case 'let':
             return (function() {
@@ -281,7 +274,6 @@
                 var x = ter.get('VAR').value;
                 var rv = { op: 'let', x: x };
                 var old = bindings[x];
-                rv.unique = bindings['?bindingCount']++;
                 bindings[x] = rv;
                 ter.get('=');
                 var t = parseTerm(ter, bindings);
@@ -297,7 +289,6 @@
                 ter.eat();
                 var x = ter.get('VAR').value;
                 var rv = { op: 'lambda', x: x };
-                rv.unique = bindings['?bindingCount']++;                
                 var old = bindings[x];
                 bindings[x] = rv;
                 ter.get('->');
@@ -424,7 +415,7 @@
                     ".  Free variables are not allowed; " +
                     "use constructors instead.";
             }
-            return { op: 'var', name: inner, boundBy: bindings[inner] };
+            return { op: 'var', name: inner };
         case 'CONSTR':
             inner = ter.eat().value;
             return { op: 'constr', name: inner };
@@ -447,16 +438,12 @@
      * PARSE TREE UTILITIES
      **********************************************************************/
 
-    var cloneParseTree = function (pt, seen) {
+    var cloneParseTree = function (pt) {
         if (!pt.op) return pt;
-        if (pt.hasOwnProperty("unique") && seen[pt.unique]) {
-            return seen[pt.unique];
-        }
         var rv = {};
-        if (pt.hasOwnProperty("unique")) seen[pt.unique] = rv;
         for (var v in pt) {
             if (!pt.hasOwnProperty(v)) continue;
-            rv[v] = cloneParseTree(pt[v], seen);
+            rv[v] = cloneParseTree(pt[v]);
         }
         return rv;
     };
@@ -486,15 +473,13 @@
         var sub3 = document.createElement('ul');
         switch (root.op) {
         case 'let':
-            sub2.textContent += ' [' + root.x + '/' + root.unique + ']';
-            sub2.setAttribute('class', 'binding' + root.unique);
+            sub2.textContent += ' [' + root.x + ']';
             sub1.appendChild(sub3);
             showParseTree(root.t, sub3);
             showParseTree(root.u, sub3);
             break;
         case 'lambda':
-            sub2.textContent += ' [' + root.x + '/' + root.unique + ']';
-            sub2.setAttribute('class', 'binding' + root.unique);
+            sub2.textContent += ' [' + root.x + ']';
             sub1.appendChild(sub3);
             showParseTree(root.t, sub3);
             break;
@@ -509,8 +494,7 @@
             break;
         case 'var':
             sub2.textContent +=
-                ' [' + root.name + '/' + root.boundBy.unique + ']';
-            sub2.setAttribute('class', 'binding' + root.boundBy.unique);
+                ' [' + root.name + ']';
             break;
         case 'constr':
             sub2.textContent += ' [' + root.name + ']';
@@ -532,7 +516,7 @@
             cont1 = prettyTermContainer(container, term);
             prettyKeyword(cont1, 'let');
             prettySpace(cont1);
-            prettyVariable(cont1, term.x, term.unique);
+            prettyVariable(cont1, term.x);
             prettySpace(cont1);
             prettyOperator(cont1, '=');
             prettySpace(cont1);
@@ -546,7 +530,7 @@
             cont1 = prettyTermContainer(container, term);
             prettyOperator(cont1, '\\');
             prettySpace(cont1);
-            prettyVariable(cont1, term.x, term.unique);
+            prettyVariable(cont1, term.x);
             prettySpace(cont1);
             prettyOperator(cont1, '->');
             prettySpace(cont1);
@@ -638,7 +622,7 @@
         switch (term.op) {
         case 'var':
             cont1 = prettyTermContainer(container, term);
-            prettyVariable(cont1, term.name, term.boundBy.unique);
+            prettyVariable(cont1, term.name);
             break;
         case 'constr':
             cont1 = prettyTermContainer(container, term);
@@ -674,10 +658,9 @@
         container.appendChild(n);
     };
 
-    var prettyVariable = function(container, name, unique) {
+    var prettyVariable = function(container, name) {
         var span = document.createElement('span');
         span.setAttribute('class', 'prettyVariable');
-        span.setAttribute('class', 'binding' + unique);
         span.textContent = name;
         container.appendChild(span);
     };
@@ -749,26 +732,26 @@
             alert('Not a beta redex.');
             return;
         }
-        subst(term.l.t, term.l.x, term.l.unique, term.r);
+        subst(term.l.t, term.l.x, term.r);
         replaceParseTree(term, term.l.t);
     };
 
     prettyHooks.setupBetaRedex = setupRedex('beta-redex',
                                             betaReduce);
     
-    var isFree = function(x,xuniq,t) {
+    var isFree = function(x,t) {
         switch (t.op) {
         case 'var':
-            return t.name === x && t.boundBy.unique === xuniq;
+            return t.name === x;
         case 'let':
-            return isFree(x,xuniq, t.t) || isFree(x,xuniq, t.u);
+            return isFree(x, t.t) || isFree(x, t.u);
         case 'lambda':
-            if (t.x === x && t.unique === xuniq) return false;
-            return isFree(x, xuniq, t.t);
+            if (t.x === x) return false;
+            return isFree(x, t.t);
         case '+': case '-': case '*': case '/': case 'app':
-            return isFree(x,xuniq, t.l) || isFree(x,xuniq, t.r);
+            return isFree(x, t.l) || isFree(x, t.r);
         case 'neg':
-            return isFree(x, xuniq, t.r);
+            return isFree(x, t.r);
         case 'constr': case 'literal':
             return false;
         default:
@@ -776,30 +759,30 @@
         }
     };    
 
-    var subst = function(t,x,xuniq,u) {
+    var subst = function(t,x,u) {
         switch (t.op) {
         case 'var':
-            if (t.name === x && t.boundBy.unique === xuniq) {
+            if (t.name === x) {
                 replaceParseTree(t,u);
             }
             return;
         case 'let':
-            subst(t.t, x, xuniq, u);
-            subst(t.u, x, xuniq, u);
+            subst(t.t, x, u);
+            subst(t.u, x, u);
             return;
         case 'lambda':
-            if (t.x === x && t.unique === xuniq) return;
-            if (isFree(t.x, t.unique, u)) {
-                alert('Unsupported variable capture for ' + t.name);
+            if (t.x === x) return;
+            if (isFree(t.x, u)) {
+                alert('Variable capture of ' + t.x);
             }
-            subst(t.t, x, xuniq, u);
+            subst(t.t, x, u);
             return;
         case '+': case '-': case '*': case '/': case 'app':
-            subst(t.l, x, xuniq, u);
-            subst(t.r, x, xuniq, u);
+            subst(t.l, x, u);
+            subst(t.r, x, u);
             return;
         case 'neg':
-            subst(t.r, x, xuniq, u);
+            subst(t.r, x, u);
             return;
         default:
             return;
