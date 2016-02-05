@@ -756,6 +756,26 @@
     prettyHooks.setupBetaRedex = setupRedex('beta-redex',
                                             betaReduce);
     
+    var isFree = function(x,xuniq,t) {
+        switch (t.op) {
+        case 'var':
+            return t.name === x && t.boundBy.unique === xuniq;
+        case 'let':
+            return isFree(x,xuniq, t.t) || isFree(x,xuniq, t.u);
+        case 'lambda':
+            if (t.x === x && t.unique === xuniq) return false;
+            return isFree(x, xuniq, t.t);
+        case '+': case '-': case '*': case '/': case 'app':
+            return isFree(x,xuniq, t.l) || isFree(x,xuniq, t.r);
+        case 'neg':
+            return isFree(x, xuniq, t.r);
+        case 'constr': case 'literal':
+            return false;
+        default:
+            throw 'Error in isFree';
+        }
+    };    
+
     var subst = function(t,x,xuniq,u) {
         switch (t.op) {
         case 'var':
@@ -768,6 +788,10 @@
             subst(t.u, x, xuniq, u);
             return;
         case 'lambda':
+            if (t.x === x && t.unique === xuniq) return;
+            if (isFree(t.x, t.unique, u)) {
+                alert('Unsupported variable capture for ' + t.name);
+            }
             subst(t.t, x, xuniq, u);
             return;
         case '+': case '-': case '*': case '/': case 'app':
