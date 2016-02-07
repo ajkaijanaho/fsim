@@ -570,7 +570,9 @@
             if (hooks.setupArithRedex &&
                 term.l.op === 'literal' &&
                 term.r.op === 'literal') {
-                hooks.setupArithRedex(cont1, term);
+                if (term.op != '/' || term.r.value !== 0) {
+                    hooks.setupArithRedex(cont1, term);
+                }
             }
             prettyTerm2(cont1, hooks, term.l);
             prettySpace(cont1);
