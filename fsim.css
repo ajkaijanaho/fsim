@@ -2,26 +2,14 @@
                             border-width: thin;
                           }
 
-#main { position: relative;
-        border-style: solid;
-      }
-
-footer { position: fixed;
-         bottom: 0;
+footer { clear: both;
        }
 
-#input-section {  position: absolute;
-                  top: 0;
-                  left: 0;
-                  border-style: solid;
+#input-section {  float: left;
                   width: 60%; }
 
-#ast-section {  border-style: solid;
-             }
+#inputbox { width: 95%; }
 
-#trace-section { border-style: solid;
-                 width: 39%;
-                 top: 0;
-                 right: 0;
-                 position: absolute;
+#trace-section { width: 39%;
+                 float: left;
                }
