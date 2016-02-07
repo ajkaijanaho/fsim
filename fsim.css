@@ -13,3 +13,21 @@ footer { clear: both;
 #trace-section { width: 39%;
                  float: left;
                }
+
+#lang-help { position: fixed;
+             left: 20%;
+             top: 5em;
+             right: 20%;
+             border-style: solid;
+             background: lightgrey;
+             opacity: 0;
+             pointer-events: none;
+           }
+
+#lang-help:target { opacity: 1;
+                    pointer-events: auto;
+                  }
+
+a.close { position: absolute;
+          right: 0;
+        }

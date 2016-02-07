@@ -32,6 +32,111 @@
     <header>
       <h1>A simple functional language simulator</h1>
     </header>
+    <p><a href="#lang-help">Open help</a></p>
+    <aside id="lang-help">
+      <a href="#close" title="Close" class="close">Close</a>
+      <h2>Usage</h2>
+      <p>
+        Write a term of the input language in the provided box.
+        Below it, a live abstract syntax tree is displayed;
+        if the current term cannot be parsed, an error is shown.
+        When you are done, press ENTER; the term appears on the right,
+        beginning an evaluation trace.
+      </p>
+      <p>
+        If you hover over a redex in the latest term in the evaluation
+        trace, it is highlighted.  Click on a redex and the
+        corresponding reduction is performed.
+      </p>
+      <p>
+        The terms of the input language are built from the following
+        operations, listed in an increasing order of precedence:
+      </p>
+      <ol>
+        <li>
+          <ul>
+            <li>
+              <kbd>let <var>x</var> = <var>term1</var>
+                in <var>term2</var></kbd>: Define a local
+                variable <kbd><var>x</var></kbd> by
+                binding <kbd><var>term1</var></kbd> to it; the
+                variable can be used both
+                in <kbd><var>term1</var></kbd> (allowing recursive
+                definitions) and in <kbd><var>term2</var></kbd>.  The
+                value of the whole let term is the value
+                of <kbd><var>term2</var></kbd>.
+            </li>
+            <li>
+              <kbd>\ <var>x</var> -&gt; <var>term</var></kbd>: A
+              lambda abstraction, defining <kbd><var>term</var></kbd>
+              an anonymous function of the
+              variable <kbd><var>x</var></kbd>.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <ul>
+            <li>
+              <kbd><var>term1</var> + <var>term2</var></kbd>: Ordinary
+              arithmetic addition.
+            </li>
+            <li>
+              <kbd><var>term1</var> - <var>term2</var></kbd>: Ordinary
+              arithmetic subtraction.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <ul>
+            <li>
+              <kbd><var>term1</var> * <var>term2</var></kbd>: Ordinary
+              arithmetic multiplication.
+            </li>
+            <li>
+              <kbd><var>term1</var> / <var>term2</var></kbd>: Ordinary
+              arithmetic division.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <ul>
+            <li>
+              <kbd>- <var>term</var></kbd>: Ordinary arithmetic negation.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <ul>
+            <li>
+              <kbd><var>term1</var> <var>term2</var></kbd>:
+              Function application.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <ul>
+            <li>
+              <kbd><var>x</var></kbd>: Variable reference.  Free variables
+              are prohibited; all variables must be bound by a let or a
+              lambda.  Variable names start with a lowercase letter.
+            </li>
+            <li>
+              <kbd><var>C</var></kbd>: Constructor reference.
+              Constructors are like free variables that cannot be
+              bound by lambda or let.  Constructor names start with
+              an uppercase letter.
+            </li>
+            <li>
+              <kbd>( <var>term</var> )</kbd>: Parentheses to control
+              disambiguation.
+            </li>
+          </ul>
+        </li>
+      </ol>
+      <p>
+        All binary operators associate to the left.
+      </p>
+    </aside>
     <section id="input-section">
       <h2>Input</h2>
       <input type="text" id="inputbox" disabled />
