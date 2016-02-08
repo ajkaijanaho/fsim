@@ -826,18 +826,18 @@
             }
             return;
         case 'let':
-            subst(t.t, x, u);
-            subst(t.u, x, u);
-            return;
         case 'lambda':
             if (t.x === x) return;
             nx = t.x;
             while (isFree(nx, u)) nx += "'";
             if (t.x !== nx) {
-                subst(t.t, t.x, { op: 'var', name: nx });
+                var nxt = { op: 'var', name: nx, boundBy: t }
+                subst(t.t, t.x, nxt);
+                if (t.op === 'let') subst(t.u, t.x, nxt);
                 t.x = nx;
             }
             subst(t.t, x, u);
+            if (t.op === 'let') subst(t.u, x, u);
             return;
         case '+': case '-': case '*': case '/': case 'app':
             subst(t.l, x, u);
