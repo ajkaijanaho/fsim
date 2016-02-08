@@ -14,19 +14,21 @@ footer { clear: both;
                  float: left;
                }
 
-#lang-help { position: fixed;
-             left: 20%;
-             top: 5em;
-             right: 20%;
-             border-style: solid;
-             background: lightgrey;
-             opacity: 0;
-             pointer-events: none;
-           }
+.box { position: fixed;
+       left: 20%;
+       top: 1em;
+       bottom: 1em;
+       right: 20%;
+       border-style: solid;
+       background: lightgrey;
+       opacity: 0;
+       overflow: auto;
+       pointer-events: none;
+     }
 
-#lang-help:target { opacity: 1;
-                    pointer-events: auto;
-                  }
+.box:target { opacity: 1;
+              pointer-events: auto;
+            }
 
 a.close { position: absolute;
           right: 0;

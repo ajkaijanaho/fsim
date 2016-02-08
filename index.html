@@ -32,8 +32,23 @@
     <header>
       <h1>A simple functional language simulator</h1>
     </header>
-    <p><a href="#lang-help">Open help</a></p>
-    <aside id="lang-help">
+    <nav><a href="#lang-help">Help</a> | <a href="#about">About</a></nav>
+    <section id="input-section">
+      <h2>Input</h2>
+      <input type="text" id="inputbox" disabled />
+      <section id="ast-section">
+        <h3>Live abstract syntax tree</h3>
+        <ul id="ptree"></ul>
+        <p id="ptreeErr"></p>
+      </section>
+    </section>
+    <section id="trace-section">
+      <h2>Evaluation trace</h2>
+      <p id="trace">
+        <span id="current-term"></span>
+      </p>
+    </section>
+    <aside id="lang-help" class="box">
       <a href="#close" title="Close" class="close">Close</a>
       <h2>Usage</h2>
       <p>
@@ -137,22 +152,53 @@
         All binary operators associate to the left.
       </p>
     </aside>
-    <section id="input-section">
-      <h2>Input</h2>
-      <input type="text" id="inputbox" disabled />
-      <section id="ast-section">
-        <h3>Live abstract syntax tree</h3>
-        <ul id="ptree"></ul>
-        <p id="ptreeErr"></p>
-      </section>
-    </section>
-    <section id="trace-section">
-      <h2>Evaluation trace</h2>
-      <p id="trace">
-        <span id="current-term"></span>
+    <aside id="about" class="box">
+      <a href="#close" title="Close" class="close">Close</a>
+      <h2>About</h2>
+      <p>
+        This simulator is pure HTML5/CSS/Javascript with no server
+        component required.
       </p>
-    </section>
-    <footer>
+      <p>
+        The simulator was written by Antti-Juhani Kaijanaho and is
+        licensed under the following copyright license:
+      </p>
+      <blockquote>
+        <p>
+          Copyright &copy; 2015, 2016 Antti-Juhani Kaijanaho
+        </p>
+        <p>
+          Permission is hereby granted, free of charge, to any person
+          obtaining a copy of this software and associated
+          documentation files (the "Software"), to deal in the
+          Software without restriction, including without limitation
+          the rights to use, copy, modify, merge, publish, distribute,
+          sublicense, and/or sell copies of the Software, and to
+          permit persons to whom the Software is furnished to do so,
+          subject to the following conditions:
+        </p>
+        <p>
+          The above copyright notice and this permission notice shall
+          be included in all copies or substantial portions of the
+          Software.
+        </p>
+        <p>
+          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+          KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+          WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+          PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+          OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+          OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+          OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+          SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+        </p>
+      </blockquote>
+      <p>
+        The simulator is developed
+        on <a href="https://github.com/ajkaijanaho/fsim">GitHub</a>.
+      </p>
+    </aside>
+      <footer>
       <hr />
       <address>
         Antti-Juhani Kaijanaho &lt;antti-juhani@kaijanaho.fi&gt;
