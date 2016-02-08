@@ -1,6 +1,9 @@
-.beta-redex, .arith-redex { border-style: solid;
-                            border-width: thin;
-                          }
+.beta-redex, .arith-redex,
+.let-expandum, .eliminable-let
+ {
+     border-style: solid;
+     border-width: thin;
+ }
 
 footer { clear: both;
        }

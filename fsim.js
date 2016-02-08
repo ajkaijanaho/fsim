@@ -39,7 +39,7 @@
     var currentTermAST = null;
 
     var addToTrace = function() {
-        var newTerm = cloneParseTree(currentTermAST, {});
+        var newTerm = cloneParseTree(currentTermAST);
         var pretty = document.createElement('span');
         prettyTerm(pretty,{},newTerm);
         var n = document.createTextNode(' \u21D2');
@@ -51,15 +51,17 @@
 
     var prettyHooks = {};
 
-    var setupRedex = function(name,reducer) {
+    var setupRedex = function(name,explanation,reducer) {
         return function(domElement, termAST) {
             domElement.addEventListener('mouseover', function(ev) {
                 ev.stopPropagation();
                 domElement.setAttribute('class', name);
+                domElement.setAttribute('title', explanation);
             });
             domElement.addEventListener('mouseout', function(ev) {
                 ev.stopPropagation();
                 domElement.removeAttribute('class');
+                domElement.removeAttribute('title');
             });
             domElement.addEventListener('click', function(ev) {
                 ev.stopPropagation();
@@ -415,7 +417,7 @@
                     ".  Free variables are not allowed; " +
                     "use constructors instead.";
             }
-            return { op: 'var', name: inner };
+            return { op: 'var', name: inner, boundBy: bindings[inner] };
         case 'CONSTR':
             inner = ter.eat().value;
             return { op: 'constr', name: inner };
@@ -440,11 +442,25 @@
 
     var cloneParseTree = function (pt) {
         if (!pt.op) return pt;
+        if (pt.hasOwnProperty("clonedAs")) return pt.clonedAs;
         var rv = {};
+        pt.clonedAs = rv;
         for (var v in pt) {
-            if (!pt.hasOwnProperty(v)) continue;
+            if (v === "clonedAs" || !pt.hasOwnProperty(v)) continue;
+            if (v === "boundBy") {
+                /* We never clone through boundBy, but we do honor cloning
+                   of boundBy done elsewhere.
+                */
+                if (pt.boundBy.hasOwnProperty("clonedAs")) {
+                    rv.boundBy = pt.boundBy.clonedAs;
+                } else {
+                    rv.boundBy = pt.boundBy;
+                }
+                continue;
+            }
             rv[v] = cloneParseTree(pt[v]);
         }
+        delete pt.clonedAs;
         return rv;
     };
 
@@ -494,7 +510,7 @@
             break;
         case 'var':
             sub2.textContent +=
-                ' [' + root.name + ']';
+                ' [' + root.name + ' (' + root.boundBy.op + ')]';
             break;
         case 'constr':
             sub2.textContent += ' [' + root.name + ']';
@@ -514,6 +530,9 @@
         switch (term.op) {
         case 'let':
             cont1 = prettyTermContainer(container, term);
+            if (hooks.setupEliminableLet && !isFree(term.x, term.u)) {
+                hooks.setupEliminableLet(cont1, term);
+            }
             prettyKeyword(cont1, 'let');
             prettySpace(cont1);
             prettyVariable(cont1, term.x);
@@ -624,6 +643,9 @@
         switch (term.op) {
         case 'var':
             cont1 = prettyTermContainer(container, term);
+            if (hooks.setupLetExpandum && term.boundBy.op === 'let') {
+                hooks.setupLetExpandum(cont1, term);
+            }
             prettyVariable(cont1, term.name);
             break;
         case 'constr':
@@ -722,11 +744,13 @@
                                  value: res });
     };
 
-    prettyHooks.setupArithRedex = setupRedex('arith-redex',
-                                             arithReduce);
+    prettyHooks.setupArithRedex =
+        setupRedex('arith-redex',
+                   'Click to perform this arithmetic calculation',
+                   arithReduce);
     
     /**********************************************************************
-     * BETA REDUCTION AND COMPANY
+     * BETA REDUCTION, LET EXPANSION, LET ELIMINATION, AND COMPANY
      **********************************************************************/
 
     var betaReduce = function(term) {
@@ -738,8 +762,40 @@
         replaceParseTree(term, term.l.t);
     };
 
-    prettyHooks.setupBetaRedex = setupRedex('beta-redex',
-                                            betaReduce);
+    prettyHooks.setupBetaRedex =
+        setupRedex('beta-redex',
+                   'Click to perform this function call',
+                   betaReduce);
+
+    var letExpand = function(term) {
+        if (term.op !== 'var' || term.boundBy.op !== 'let') {
+            alert('Not a let expandum.');
+            return;
+        }
+        // cloning avoids making the term cyclic in the case of a
+        // recursive variable (that would complicate matters)
+        var nt = cloneParseTree(term.boundBy.t);
+        replaceParseTree(term, nt);
+    };
+
+    prettyHooks.setupLetExpandum =
+        setupRedex('let-expandum',
+                   'Click to replace this variable with its definition',
+                   letExpand);
+
+
+    var letEliminate = function(term) {
+        if (term.op !== 'let' || isFree(term.x, term.u)) {
+            alert('Not a let redex.');
+            return;
+        }
+        replaceParseTree(term, term.u);
+    };
+
+    prettyHooks.setupEliminableLet =
+        setupRedex('eliminable-let',
+                   'Click to eliminate this useless local variable definition',
+                   letEliminate);
     
     var isFree = function(x,t) {
         switch (t.op) {
