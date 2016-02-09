@@ -1,12 +1,21 @@
-This is a work in progress, a learning-by-doing project for me to figure out
-modern Javascript and (frontend-only) single-page apps.
+This is a simple functional language simulator supporting lambda, let
+expressions, and simple arithmetic.  The language syntax follows
+Haskell, mostly.  The idea is, the simulator allows the user to select
+a redex to reduce; this way, they can easily explore different
+reduction strategies without doing it by hand.
 
-The plan is to allow the user to somehow explore the evaluation of simple
-programs in a simple functional language.  It's not nearly complete yet.
+Just open index.html in Chromium to use, or put this directory up on
+http(s) and open it in Chromium.  There are usage instructions on the
+page.  Other modern browsers ought to work as well but have not been
+tested.
+
+Development happens at https://github.com/ajkaijanaho/fsim .  Bug
+reports preferably as GitHub issues.  You may contact me at
+antti-juhani@kaijanaho.fi.
 
 The program is licensed as
 
-  Copyright 2015 Antti-Juhani Kaijanaho
+  Copyright 2015, 2016 Antti-Juhani Kaijanaho
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
