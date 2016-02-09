@@ -802,6 +802,7 @@
         case 'var':
             return t.name === x;
         case 'let':
+            if (t.x === x) return false;
             return isFree(x, t.t) || isFree(x, t.u);
         case 'lambda':
             if (t.x === x) return false;
