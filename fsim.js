@@ -819,10 +819,12 @@
 
     var subst = function(t,x,u) {
         var nx;
+        var nu;
         switch (t.op) {
         case 'var':
             if (t.name === x) {
-                replaceParseTree(t,u);
+                nu = cloneParseTree(u);
+                replaceParseTree(t,nu);
             }
             return;
         case 'let':
