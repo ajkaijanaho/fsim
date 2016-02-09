@@ -201,9 +201,12 @@
 
     /* term   -> term1                          [ VAR CONSTR "(" "-" ]
                | "let" VAR "="  term "in" term  [ "let" ]
-               | "\"   VAR "->" term            [ "\" ]
+               | "\"   lambda_rest              [ "\" ]
                  FIRST:  VAR CONSTR "(" "-" "let "\"
                  FOLLOW: END "in" ")"
+
+       lambda_rest -> VAR "->" term
+                    | VAR lambda_rest
 
        //term1  -> term2
        //        | term1 '+' term2
@@ -287,18 +290,8 @@
                 return rv;
             })();
         case '\\':
-            return (function() {
-                ter.eat();
-                var x = ter.get('VAR').value;
-                var rv = { op: 'lambda', x: x };
-                var old = bindings[x];
-                bindings[x] = rv;
-                ter.get('->');
-                var t = parseTerm(ter, bindings);
-                rv.t = t;
-                bindings[x] = old;                
-                return rv;
-            })();
+            ter.eat();
+            return parseLambdaRest(ter, bindings);
         case 'VAR': case 'CONSTR': case 'LITERAL': case '(': case '-':
             return parseTerm1(ter, bindings);
         default:
@@ -308,6 +301,28 @@
         }
     };
 
+    var parseLambdaRest = function parseLambdaRest(ter, bindings) {
+        var x = ter.get('VAR').value;
+        var rv = { op: 'lambda', x: x };
+        var old = bindings[x];
+        bindings[x] = rv;
+        switch (ter.peek().kind) {
+        case '->':
+            ter.get('->');
+            rv.t = parseTerm(ter, bindings);
+            break;
+        case 'VAR':
+            rv.t = parseLambdaRest(ter, bindings);
+            break;
+        default:
+            throw 'Parse error: ' +
+                'expected a variable or "->"' +
+                ', got ' + ter.peek().kind;
+        }
+        bindings[x] = old;                
+        return rv;
+    }
+    
     var parseTerm1 = function parseTerm1(ter, bindings) {
         var l = parseTerm2(ter, bindings);
         var r;
@@ -527,6 +542,7 @@
     // (grammar as above, with the //-variants instead of the _-variants)
     var prettyTerm = function prettyTerm(container, hooks, term) {
         var cont1;
+        var term1;
         switch (term.op) {
         case 'let':
             cont1 = prettyTermContainer(container, term);
@@ -551,9 +567,15 @@
             prettySpace(cont1);
             prettyVariable(cont1, term.x);
             prettySpace(cont1);
+            term1 = term.t;
+            while (term1.op === 'lambda') {
+                prettyVariable(cont1, term1.x);
+                prettySpace(cont1);
+                term1 = term1.t;
+            }
             prettyOperator(cont1, '->');
             prettySpace(cont1);
-            prettyTerm(cont1, hooks, term.t);
+            prettyTerm(cont1, hooks, term1);
             break;
         default:
             prettyTerm1(container, hooks, term);
